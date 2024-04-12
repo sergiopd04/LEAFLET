@@ -3,7 +3,7 @@ var mymap = L.map('mapid').setView([38.1658, -0.7702], 14);
 
 // Añadir capa de OpenStreetMap
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 35
+  maxZoom: 20
 }).addTo(mymap);
 
 // Inicializar Leaflet Draw
@@ -23,6 +23,8 @@ var drawControl = new L.Control.Draw({
   }
 });
 mymap.addControl(drawControl);
+
+
 
 
 mymap.on(L.Draw.Event.CREATED, function (event) {
@@ -93,7 +95,7 @@ function mostrarLineas() {
           var content = popup.getContent();
           var id = e.target.options.id;
 
-          // Crear un elemento temporal para convertir la cadena de texto HTML en elementos del DOM
+          
           var tempElement = document.createElement('div');
           tempElement.innerHTML = content;
 
@@ -123,7 +125,6 @@ function mostrarLineas() {
 }
 
 
-// Función para generar el contenido del popup
 function generarPopup(datos) {
   var cantidadTrazadas = datos.cantidad_trazadas;
   var popupContent = '<div>';
@@ -137,54 +138,59 @@ function generarPopup(datos) {
   }
 
   // Textarea para guardar texto
-  popupContent += '<p><textarea class="texto-input"></textarea></p>';
+  popupContent += '<p><textarea class="texto-input">' + datos.texto + '</textarea></p>'; 
+
+  if (datos.texto == null){
+    datos.texto == "";
+  }
   
   popupContent += '</div>';
   
-  
   popupContent += '<p><button class="guardar-color-btn" data-id="' + datos.id + '">Guardar color</button><p>';
-  
   
   popupContent += '<button class="eliminar-btn" data-id="' + datos.id + '">Eliminar</button>';
   
   return popupContent;
 }
 
+// Agregar un event listener para el clic del botón guardar-color
+document.addEventListener('click', function(e) {
+  if (e.target && e.target.classList.contains('guardar-color-btn')) {
+    var id = e.target.getAttribute('data-id');
+    var colors = [];
+    var colorInputs = document.querySelectorAll('.color-input');
+    colorInputs.forEach(function(input) {
+      colors.push(input.value);
+    });
+    var texto = document.querySelector('.texto-input').value; // Obtener el valor del textarea
+    // Enviar los datos al servidor
+    fetch('guardar_color.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        id: id,
+        colors: colors,
+        texto: texto // Incluir el texto en los datos enviados al servidor
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      console.log(data);
+      // Manejar la respuesta del servidor si es necesario
+    })
+    .catch(error => {
+      console.error('Error al guardar los colores:', error);
+    });
+  }
+});
 
-  // Agregar un event listener para el clic del botón guardar-color
-  document.addEventListener('click', function(e) {
-    if (e.target && e.target.classList.contains('guardar-color-btn')) {
-      var id = e.target.getAttribute('data-id');
-      var colors = [];
-      var colorInputs = document.querySelectorAll('.color-input');
-      colorInputs.forEach(function(input) {
-        colors.push(input.value);
-      });
-      // Enviar los datos al servidor
-      fetch('guardar_color.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          id: id,
-          colors: colors,
-        })
-      })
-      .then(response => response.json())
-      .then(data => {
-        console.log(data);
-        // Manejar la respuesta del servidor si es necesario
-      })
-      .catch(error => {
-        console.error('Error al guardar los colores:', error);
-      });
-    }
-  });
 
 document.addEventListener("DOMContentLoaded", function() {
   mostrarLineas();
 });
+
 
 
 // Función para eliminar la línea
