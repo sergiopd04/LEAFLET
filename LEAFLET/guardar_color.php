@@ -6,11 +6,12 @@ $id = $datos['id'];
 $colors = $datos['colors'];
 $texto = $datos['texto'];
 
+
 $colores = implode(',', $colors);
 
-$sql = "UPDATE nodos SET colores = ?, texto = ? WHERE id = ?";
+$sql = "UPDATE nodos SET colores = ?, texto = ?WHERE id = ?";
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("ssi", $colores, $texto, $id);
+$stmt->bind_param("ssi", $colores, $texto, $id );
 $stmt->execute();
 $stmt->close();
 

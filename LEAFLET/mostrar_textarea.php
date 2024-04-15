@@ -12,7 +12,6 @@ $stmt = $conn->prepare($sql);
 $stmt->bind_param("si", $text, $id);
 $stmt->execute();
 $stmt->close();
-
 $conn->close();
 
 echo json_encode(['success' => true]);

@@ -11,7 +11,11 @@ var drawnItems = new L.FeatureGroup();
 mymap.addLayer(drawnItems);
 var drawControl = new L.Control.Draw({
   draw: {
-    polyline: true,
+    polyline: {
+      shapeOptions: {
+        dashArray: '10, 10', 
+      }
+    },
     polygon: false,
     circle: false,
     marker: true,
@@ -23,9 +27,6 @@ var drawControl = new L.Control.Draw({
   }
 });
 mymap.addControl(drawControl);
-
-
-
 
 mymap.on(L.Draw.Event.CREATED, function (event) {
   var layer = event.layer;
@@ -108,8 +109,6 @@ function mostrarLineas() {
             colorInputs.forEach(function(input) {
               colores.push(input.value);
             });
-            // Aquí puedes enviar los colores a tu backend para guardarlos en la base de datos
-            console.log('ID:', id, 'Colores:', colores);
           });
         });
 
@@ -134,24 +133,27 @@ function generarPopup(datos) {
   
   // Input de color
   for (var i = 1; i <= cantidadTrazadas; i++) {
-    popupContent += '<p>Color ' + ': <input type="color" class="color-input" value="' + datos.colores[i - 1] + '"></p>';
+    popupContent += '<p>Color ' +  ': <input type="color" class="color-input" value="' + datos.colores[i - 1] + '"></p>';
   }
+
+  // Select con dos opciones
+  popupContent += '<p>Mostrar como: <select class="opciones-select">';
+  popupContent += '<option value="continua">Continua</option>';
+  popupContent += '<option value="discontinua">Discontinua</option>';
+  popupContent += '</select></p>';
 
   // Textarea para guardar texto
-  popupContent += '<p><textarea class="texto-input">' + datos.texto + '</textarea></p>'; 
-
-  if (datos.texto == null){
-    datos.texto == "";
-  }
+  popupContent += '<p><textarea class="texto-input">' + (datos.texto || "") + '</textarea></p>'; 
   
   popupContent += '</div>';
   
-  popupContent += '<p><button class="guardar-color-btn" data-id="' + datos.id + '">Guardar color</button><p>';
+  popupContent += '<p><button class="guardar-color-btn" data-id="' + datos.id + '">Guardar</button></p>';
   
   popupContent += '<button class="eliminar-btn" data-id="' + datos.id + '">Eliminar</button>';
   
   return popupContent;
-}
+} 
+
 
 // Agregar un event listener para el clic del botón guardar-color
 document.addEventListener('click', function(e) {
@@ -162,7 +164,9 @@ document.addEventListener('click', function(e) {
     colorInputs.forEach(function(input) {
       colors.push(input.value);
     });
-    var texto = document.querySelector('.texto-input').value; // Obtener el valor del textarea
+    var texto = document.querySelector('.texto-input').value; 
+
+    var trazada = document.querySelector('.opciones-select').value;
     // Enviar los datos al servidor
     fetch('guardar_color.php', {
       method: 'POST',
@@ -172,13 +176,13 @@ document.addEventListener('click', function(e) {
       body: JSON.stringify({
         id: id,
         colors: colors,
-        texto: texto // Incluir el texto en los datos enviados al servidor
+        texto: texto,
+        trazada: trazada
       })
     })
     .then(response => response.json())
     .then(data => {
       console.log(data);
-      // Manejar la respuesta del servidor si es necesario
     })
     .catch(error => {
       console.error('Error al guardar los colores:', error);
