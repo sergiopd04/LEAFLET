@@ -11,11 +11,7 @@ var drawnItems = new L.FeatureGroup();
 mymap.addLayer(drawnItems);
 var drawControl = new L.Control.Draw({
   draw: {
-    polyline: {
-      shapeOptions: {
-        dashArray: '10, 10', 
-      }
-    },
+    polyline: true,
     polygon: false,
     circle: false,
     marker: true,
@@ -26,7 +22,83 @@ var drawControl = new L.Control.Draw({
     remove: true
   }
 });
+
 mymap.addControl(drawControl);
+
+function mostrarUbicaciones() {
+  fetch('mostrar_ubicaciones.php')
+    .then(response => response.json())
+    .then(data => {
+      data.forEach(function(ubicacion) {
+        var latlng = L.latLng(ubicacion.latitud, ubicacion.longitud);
+        var marker = L.marker(latlng).addTo(mymap);
+        // Crear el contenido del pop-up
+        var popupContent = 'ID: ' + ubicacion.id + '<br>Latitud: ' + ubicacion.latitud + '<br>Longitud: ' + ubicacion.longitud
+        + '<br><button class="eliminar-ubicacion" data-id="' + ubicacion.id + '">Eliminar</button>';
+        // Agregar el pop-up al marcador
+        marker.bindPopup(popupContent);
+      });
+    })
+    .catch(error => {
+      console.error('Error al cargar las ubicaciones:', error);
+    });
+}
+
+function eliminarUbicacion(id) {
+  fetch('eliminar_ubicacion.php?id=' + id, {
+    method: 'DELETE'
+  })
+  .then(response => {
+    if (response.ok) {
+      console.log('La ubicación con ID ' + id + ' fue eliminada de la base de datos.');
+    } else {
+      console.error('Error al eliminar la ubicación de la base de datos.');
+    }
+  })
+  .catch(error => {
+    console.error('Error al eliminar la ubicación de la base de datos:', error);
+  });
+}
+
+document.addEventListener('click', function(event) {
+  if (event.target.classList.contains('eliminar-ubicacion')) {
+    var id = event.target.getAttribute('data-id');
+    eliminarUbicacion(id);
+  }
+});
+
+// Función para guardar una ubicación
+function guardarUbicacion(latlng) {
+  fetch('guardar_ubicacion.php', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      latlng: {
+        lat: latlng.lat,
+        lng: latlng.lng
+      }
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log('Ubicación guardada en la base de datos:', data);
+  })
+  .catch(error => {
+    console.error('Error al guardar la ubicación:', error);
+  });
+}
+
+// Evento al crear un marcador en el mapa
+mymap.on('draw:created', function(event) {
+  var layer = event.layer;
+  
+  if (layer instanceof L.Marker) {
+    var latlng = layer.getLatLng();
+    guardarUbicacion(latlng);
+  }
+});
 
 mymap.on(L.Draw.Event.CREATED, function (event) {
   var layer = event.layer;
@@ -61,11 +133,7 @@ mymap.on(L.Draw.Event.CREATED, function (event) {
   });
 });
 
-var computerIcon = L.icon({
-  iconUrl: 'assets/represent.png',
-  iconSize: [40, 40], 
-  iconAnchor: [16, 16], 
-});
+
 
 function mostrarLineas() {
   fetch('mostrar_linea.php')
@@ -85,7 +153,7 @@ function mostrarLineas() {
         var polyline = L.polyline(latlngs, {id: id}).addTo(mymap);
         polyline.bindPopup(generarPopup(datos));
         
-        // Asignar colores a cada trazada
+        // Establecer colores a cada trazada
         for (var i = 0; i < colores.length; i++) {
           var color = colores[i] || '#000000';
           polyline.setStyle({color: color});
@@ -96,11 +164,9 @@ function mostrarLineas() {
           var content = popup.getContent();
           var id = e.target.options.id;
 
-          
           var tempElement = document.createElement('div');
           tempElement.innerHTML = content;
 
-          // Ahora puedes usar querySelector en el elemento temporal
           var guardarBtn = tempElement.querySelector('.guardar-color-btn');
 
           guardarBtn.addEventListener('click', function() {
@@ -122,6 +188,7 @@ function mostrarLineas() {
       console.error('Error al cargar las líneas:', error);
     });
 }
+
 
 
 function generarPopup(datos) {
@@ -193,7 +260,9 @@ document.addEventListener('click', function(e) {
 
 document.addEventListener("DOMContentLoaded", function() {
   mostrarLineas();
+  mostrarUbicaciones();
 });
+
 
 
 
